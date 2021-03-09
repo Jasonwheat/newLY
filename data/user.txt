@@ -1,0 +1,8 @@
+user A{vlan 10;ip 192.168.10.0/24;}
+user B{vlan 20;ip 192.168.20.0/24;}
+vlanrange(30-100,1){user C; user D;}
+iprange(192.160.0.0/16,24){user C,D;}
+group E{user A; user B}
+group all{user A,B,C,D}
+
+
