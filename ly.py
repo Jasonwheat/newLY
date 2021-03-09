@@ -1,4 +1,5 @@
 import ply.lex as lex
+import ply.yacc as yacc
 import IPy
 
 # read files
@@ -102,5 +103,15 @@ while True:
     print(tok)
 
 # 规约：使用一个产生式的左部替代右部
+
+
+def p_expression_plus(p):
+    'expression : expression PLUS term'
+    p[0] = p[1] + p[3]
+
+
+def p_expression_minus(p):
+    'expression : expression MINUS term'
+    p[0] = p[1] - p[3]
 
 
