@@ -3,22 +3,24 @@ from pyparsing import *
 
 with open(r'data/user.txt', 'r') as file:
     user_policy = file.read()
+    with open(r'test.txt', 'r') as test_file:
+        test = test_file.read()
 
 
 # 通用匹配模式
 integer = Word(nums)
 identifier = Word(srange("[a-zA-Z_]"), srange("[a-zA-Z0-9_-]"))
-ipaddress = Combine(integer - ('.' + integer) * 3)
+ip_nosubnet = Combine(integer - ('.' + integer) * 3)
+ip_subnet = Combine(integer - ('.' + integer) * 3 + "/" + integer)
+ipaddress = ip_subnet ^ ip_nosubnet
+# 用户匹配模式
+vlan = "vlan" + integer
+ip = "ip" + ipaddress
+def_user = "user" + identifier + "{" + vlan + ";" + ip + ";" + "}"
 
-str = "999"
-result = integer.parseString(str)
+
+result = def_user.parseString(test)
 print(result)
-
-data = '''
-user A{vlan 10;ip 192.168.10.0/24;}
-user B{vlan 20;ip 192.168.20.0/24;}
-vlanrange(30-100,1){user C; user D;}
-'''
 
 
 

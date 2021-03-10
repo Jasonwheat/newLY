@@ -44,6 +44,8 @@ t_HYPHEN = r'-'
 t_COMMA = r','
 
 
+
+
 # A regular expression rule with some action code
 def t_IPADDRESS_SUBNET(t):
     r'(([01]{0,1}\d{0,1}\d|2[0-4]\d|25[0-5])\.){3}([01]{0,1}\d{0,1}\d|2[0-4]\d|25[0-5])/(\d+)'
@@ -100,18 +102,30 @@ while True:
     tok = lexer.token()
     if not tok:
         break
-    print(tok)
+    # print(tok)
 
 # 规约：使用一个产生式的左部替代右部
 
 
-def p_expression_plus(p):
-    'expression : expression PLUS term'
-    p[0] = p[1] + p[3]
+def p_vlan(p):
+    'vlan : VLAN NUMBER'
+    p[0] = (p[1], p[2])
 
 
-def p_expression_minus(p):
-    'expression : expression MINUS term'
-    p[0] = p[1] - p[3]
+def p_ip(p):
+    'ip : IP IPADDRESS_SUBNET'
+    p[0] = (p[1], p[2])
 
 
+def p_user(p):
+    'user : USER IDENTIFIER LBRACE vlan SEMICOLON ip SEMICOLON RBRACE'
+    p[0] = (p[2], p[4], p[6])
+
+
+def p_error(p):
+    print("Syntax error in input!")
+
+
+parser = yacc.yacc(debug=True)
+s = parser.parse(data)
+print(s)
