@@ -4,8 +4,8 @@ from UNIT import User, IP
 
 with open(r'data/user.txt', 'r') as file:
     user_policy = file.read()
-    with open(r'test.txt', 'r') as test_file:
-        test = test_file.read()
+with open(r'test.txt', 'r') as test_file:
+    test = test_file.read()
 
 # 通用匹配模式
 integer = Word(nums)
@@ -25,7 +25,7 @@ user_schema = (Suppress("{") + (id("user*") + Suppress(";"))[...] + Suppress("}"
                   ";") + Suppress("}"))
 def_group = "group" + id("groupname") + user_schema
 ip_range = "iprange" + Suppress("(") + ip_subnet + Suppress(",") + integer + Suppress(")") + user_schema
-vlan_range = "vlanrange" + Suppress("(") + integer + Suppress("-") + integer + Suppress(",") + integer + Suppress(
+vlan_range = "vlanrange" + Suppress("(") + integer("start_num") + Suppress("-") + integer("end_num") + Suppress(",") + integer("dif_num") + Suppress(
     ")") + user_schema
 
 # 策略组匹配模式
@@ -52,6 +52,18 @@ def get_user(data):
         if "ip" in us:
             u.ip = us["ip"]
         user_list.append(u)
+    # vlanrange分配
+    v_list = sum(vlan_range.searchString(data))['user']
+    start_num = int(sum(vlan_range.searchString(data))['start_num'])
+    end_num = int(sum(vlan_range.searchString(data))['end_num'])
+    dif_num = int(sum(vlan_range.searchString(data))['dif_num'])
+    count = -1
+    for v in v_list:
+        count += 1
+        for i in user_list:
+            if v == i.name:
+                i.vlan = start_num + dif_num * count
+
     return user_list
 
 
@@ -71,19 +83,19 @@ s7 = "user A {ip 192.168.12.1/24; vlan 10; } " \
      "group G2{user V; user C;} " \
      "group G3{user x;} " \
      "iprange(192.160.0.0/16,24){user C,D;} " \
-     "vlanrange(30-100,1){user C; user D;}"
-s11 = "isolate(type FTP;time 0:00-8:00;)"
+     "vlanrange(30-100,1){user C; user D;} " \
+     "isolate(type FTP;time 0:00-8:00;)"
 
 # print(ip_range.parseString(s9))
-# print(vlan_range.parseString(s10))
-# print(policy_isolate.parseString(s11))
+# print(vlan_range.searchString(s7))
+# print(sum(vlan_range.searchString(s7))['user'])
+# print(sum(vlan_range.searchString(s7))['dif_num'])
+print(sum(policy_isolate.searchString(s7)))
 
 
 print(get_user(s7))
-print(get_user(s7)[0].show())
-print(get_group(s7)['G1'][0])
-print(get_group(s7))
+print(get_user(s7)[2].show())
+# print(get_group(s7)['G1'][0])
+# print(get_group(s7))
 
-# test = "hhh user A {ip 192.168.12.1/24; vlan 10; } "
-# print(def_user.parseString(s5))
-# print(sum(def_user.searchString(test)))
+
