@@ -1,6 +1,6 @@
 import IPy
 from pyparsing import *
-from UNIT import User, IP
+from UNIT import *
 
 with open(r'data/user.txt', 'r') as file:
     user_policy = file.read()
@@ -44,7 +44,7 @@ def get_user(data):
         u = User()
         u.name = us["name"]
         for i in get_group(data):
-            for j in get_group(data)[i]:
+            for j in get_group(data)[i].user_list:
                 if u.name == j:
                     u.userG = i  # 遍历group字典获取用户组
         if "vlan" in us:
@@ -67,11 +67,14 @@ def get_user(data):
     return user_list
 
 
-# 返回一个字典：键为用户组名，值为该用户组下的用户列表
+# 返回一个字典：键为用户组名，值为该用户组对象
 def get_group(data):
     group_dict = {}
     for gr in def_group.searchString(data):
-        group_dict[gr["groupname"]] = gr["user"]
+        g = Group()
+        group_dict[gr["groupname"]] = g
+        g.name = gr["groupname"]
+        g.user_list = gr["user"]
     return group_dict
 
 
@@ -92,9 +95,10 @@ s7 = "user A {ip 192.168.12.1/24; vlan 10; } " \
 # print(sum(vlan_range.searchString(s7))['dif_num'])
 print(sum(policy_isolate.searchString(s7)))
 
-
+print(get_group(s7))
 print(get_user(s7))
 print(get_user(s7)[2].show())
+print(get_user(s7)[3].show())
 # print(get_group(s7)['G1'][0])
 # print(get_group(s7))
 
