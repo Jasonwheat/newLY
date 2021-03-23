@@ -6,3 +6,20 @@ group E{user A; user B}
 group all{user A,B,C,D}
 
 
+policy a{
+isolate ( type FTP; time 0:00-8:00;)
+link vxlan;
+}
+policy linktype_vlan{
+link vlan;
+gateway CE;
+}
+policy traffic_limit{
+BW 2M;
+}
+
+main{
+A.a;
+B.a;
+traffic_limit;
+}

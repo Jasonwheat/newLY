@@ -6,6 +6,16 @@
 from z3 import *
 import IPy
 
+class Group:
+    """
+    用户组数据结构
+    """
+    def __init__(self):
+        self.name = ''
+        self.user_list = []
+        self.is_vlan = False
+        self.is_vxlan = False
+
 
 class User:
     """
@@ -90,12 +100,6 @@ class IP:
     格式：fst.snd.trd.fth/mask
     通过getIP读取字符串格式IP，并检查IP格式是否符合标准
     """
-
-    # def __init__(self, ip_instance, prefix_len):
-    #     self.ip_address = ip_instance
-    #     self.prefix_len = prefix_len
-    #     self.prefix = self.ip_address.make_net(prefix_len)
-
     def __init__(self, ip_instance: IPy.IP, prefix_len: int = -1):
         self.ip_address = ip_instance
         if prefix_len == -1:
@@ -114,46 +118,6 @@ class IP:
         if not isinstance(other, IP):
             return False
         return self.ip_address.__cmp__(other.ip_address) == 0
-
-    # def Str2int_ip(self, str):
-    #     tem_int = int(str)
-    #     assert (0 <= tem_int <= 255)
-    #     return tem_int
-    #
-    # def Str2int_mask(self, str):
-    #     tem_int = int(str)
-    #     assert (0 <= tem_int <= 32)
-    #     return tem_int
-    #
-    # def get_IP_no_mask(self, nomask_IP_Str):
-    #     tem_str = [''] * 4
-    #     k = 0
-    #     for char in nomask_IP_Str:
-    #         if char == '.':
-    #             k += 1
-    #             continue
-    #         tem_str[k] += char
-    #     self.fst = self.Str2int_ip(tem_str[0])
-    #     self.snd = self.Str2int_ip(tem_str[1])
-    #     self.trd = self.Str2int_ip(tem_str[2])
-    #     self.fth = self.Str2int_ip(tem_str[3])
-    #     self.strip = tem_str[0] + '.' + tem_str[1] + '.' + tem_str[2] + '.' + tem_str[3]
-    #
-    #
-    # def getIP(self,IP_Str):
-    #     tem_str = [''] * 5
-    #     k = 0
-    #     for char in IP_Str:
-    #         if (char == '.'or char == '/'):
-    #             k += 1
-    #             continue
-    #         tem_str[k] += char
-    #     self.fst = self.Str2int_ip(tem_str[0])
-    #     self.snd = self.Str2int_ip(tem_str[1])
-    #     self.trd = self.Str2int_ip(tem_str[2])
-    #     self.fth = self.Str2int_ip(tem_str[3])
-    #     self.mask = self.Str2int_mask(tem_str[4])
-    #     self.strip = tem_str[0] + '.' + tem_str[1] + '.' + tem_str[2] + '.' + tem_str[3] + '/' + tem_str[4]
 
 
 class Segment_IP:
@@ -199,22 +163,3 @@ class Traffic:
     def getFromaggUser(self):
         pass
 
-
-'''
-    def set_device_interface_ip(self):
-        for (source, target, dir) in self.ans_topo.edges.data():
-            if not self.device_is_user_node(source) and not self.device_is_user_node(target):
-                if 'prefix' not in self.ans_topo[target][source]:
-                    prefix = L2.get_a_prefix()
-                    if 'interface' not in self.ans_topo.nodes[source]:
-                        self.ans_topo.nodes[source]['interface'] = {}
-                    self.ans_topo.nodes[source]['interface'].update(
-                        {self.ans_topo[source][target]['int']: L2.get_a_ip_in_prefix(prefix)})
-                    self.ans_topo[source][target]['prefix'] = prefix
-                else:
-                    if 'interface' not in self.ans_topo.nodes[source]:
-                        self.ans_topo.nodes[source]['interface'] = {}
-                    self.ans_topo.nodes[source]['interface'].update(
-                        {self.ans_topo[source][target]['int']:
-                             L2.get_a_ip_in_prefix(self.ans_topo[target][source]['prefix'])})
-'''
