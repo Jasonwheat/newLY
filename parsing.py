@@ -28,12 +28,17 @@ ip_range = "iprange" + Suppress("(") + ip_subnet + Suppress(",") + integer + Sup
 vlan_range = "vlanrange" + Suppress("(") + integer("start_num") + Suppress("-") + integer("end_num") + Suppress(",") + integer("dif_num") + Suppress(
     ")") + user_schema
 
-# 策略组匹配模式
+# 策略集匹配模式
 protocol = "FTP"
 time = Combine(Combine(integer + ":" + integer) + "-" + Combine(integer + ":" + integer))
-policy_isolate = "isolate" + Suppress("(") + "type" + protocol + Suppress(";") + "time" + time + Suppress(
+p_isolate = "isolate" + Suppress("(") + "type" + protocol + Suppress(";") + "time" + time + Suppress(
     ";") + Suppress(")")
-policy = "policy" + id + Suppress("{") + policy_isolate[...] + Suppress("}")
+p_link = (Word("link") + "vlan" + Suppress(";")) ^ \
+         (Word("link") + "vxlan" + Suppress(";"))
+p_gateway = "gateway" + id("gateway")
+bandwidth = integer("bw") + Suppress("M")
+p_bandwidth = "BW" + bandwidth
+policy = "policy" + id("policy_name") + Suppress("{") + p_isolate[...] + Suppress("}")
 
 
 # 得到所有用户的方法
@@ -88,12 +93,13 @@ s7 = "user A {ip 192.168.12.1/24; vlan 10; } " \
      "iprange(192.160.0.0/16,24){user C,D;} " \
      "vlanrange(30-100,1){user C; user D;} " \
      "isolate(type FTP;time 0:00-8:00;)"
-
+s8 = "link vlan;"
 # print(ip_range.parseString(s9))
 # print(vlan_range.searchString(s7))
 # print(sum(vlan_range.searchString(s7))['user'])
 # print(sum(vlan_range.searchString(s7))['dif_num'])
-print(sum(policy_isolate.searchString(s7)))
+print(sum(p_isolate.searchString(s7)))
+print(p_link.parseString(s8))
 
 print(get_group(s7))
 print(get_user(s7))
