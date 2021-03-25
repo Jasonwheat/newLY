@@ -31,14 +31,15 @@ vlan_range = "vlanrange" + Suppress("(") + integer("start_num") + Suppress("-") 
 # 策略集匹配模式
 protocol = "FTP"
 time = Combine(Combine(integer + ":" + integer) + "-" + Combine(integer + ":" + integer))
-p_isolate = "isolate" + Suppress("(") + "type" + protocol + Suppress(";") + "time" + time + Suppress(
-    ";") + Suppress(")")
+p_isolate = "isolate" + Suppress("(") + "type" + protocol + Suppress(",") + "time" + time + Suppress(")") + Suppress(";")
 p_link = (Word("link") + "vlan" + Suppress(";")) ^ \
          (Word("link") + "vxlan" + Suppress(";"))
-p_gateway = "gateway" + id("gateway")
+p_gateway = "gateway" + id("gateway") + Suppress(";")
 bandwidth = integer("bw") + Suppress("M")
-p_bandwidth = "BW" + bandwidth
-policy = "policy" + id("policy_name") + Suppress("{") + p_isolate[...] + Suppress("}")
+p_bandwidth = "BW" + bandwidth + Suppress(";")
+def_policy = "policy" + id("policy_name") + Suppress("{") + \
+         ((p_isolate[..., 1]) & (p_link[..., 1]) & (p_gateway[..., 1]) & (p_bandwidth[..., 1])) + \
+         Suppress("}")
 
 
 # 得到所有用户的方法
@@ -83,6 +84,14 @@ def get_group(data):
     return group_dict
 
 
+def get_policy(data):
+    policy_dict = {}
+    for po in def_policy.searchString(data):
+        policy_dict[po["policy_name"]] = po
+    return policy_dict
+
+
+
 s7 = "user A {ip 192.168.12.1/24; vlan 10; } " \
      "user B { vlan 10; ip 192.168.12.1/24; } " \
      "user C { vlan 10; } " \
@@ -92,20 +101,23 @@ s7 = "user A {ip 192.168.12.1/24; vlan 10; } " \
      "group G3{user x;} " \
      "iprange(192.160.0.0/16,24){user C,D;} " \
      "vlanrange(30-100,1){user C; user D;} " \
-     "isolate(type FTP;time 0:00-8:00;)"
-s8 = "link vlan;"
-# print(ip_range.parseString(s9))
-# print(vlan_range.searchString(s7))
-# print(sum(vlan_range.searchString(s7))['user'])
-# print(sum(vlan_range.searchString(s7))['dif_num'])
+     "isolate(type FTP;time 0:00-8:00;)" \
+     "policy a{ link vlan; " \
+     "gateway CE;}" \
+     "policy b { isolate(type FTP,time 0:00-8:00); link vxlan;}" \
+     "policy traffic_limit {" \
+     "BW 2M; " \
+     "}"
+
+
 print(sum(p_isolate.searchString(s7)))
-print(p_link.parseString(s8))
+print(def_policy.searchString(s7))
+print(get_policy(s7))
 
 print(get_group(s7))
 print(get_user(s7))
 print(get_user(s7)[2].show())
 print(get_user(s7)[3].show())
-# print(get_group(s7)['G1'][0])
-# print(get_group(s7))
+
 
 
