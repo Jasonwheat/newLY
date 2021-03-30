@@ -25,21 +25,33 @@ user_schema = (Suppress("{") + (id("user*") + Suppress(";"))[...] + Suppress("}"
                   ";") + Suppress("}"))
 def_group = "group" + id("groupname") + user_schema
 ip_range = "iprange" + Suppress("(") + ip_subnet + Suppress(",") + integer + Suppress(")") + user_schema
-vlan_range = "vlanrange" + Suppress("(") + integer("start_num") + Suppress("-") + integer("end_num") + Suppress(",") + integer("dif_num") + Suppress(
-    ")") + user_schema
+vlan_range = "vlanrange" + Suppress("(") + \
+             integer("start_num") + Suppress("-") + integer("end_num") + Suppress(",") + integer("dif_num") + \
+             Suppress(")") + user_schema
 
 # 策略集匹配模式
 protocol = "FTP"
 time = Combine(Combine(integer + ":" + integer) + "-" + Combine(integer + ":" + integer))
-p_isolate = "isolate" + Suppress("(") + "type" + protocol + Suppress(",") + "time" + time + Suppress(")") + Suppress(";")
+p_isolate = "isolate" + Suppress("(") + "type" + protocol + Suppress(",") + "time" + time + Suppress(")") + Suppress(
+    ";")
 p_link = (Word("link") + "vlan" + Suppress(";")) ^ \
          (Word("link") + "vxlan" + Suppress(";"))
 p_gateway = "gateway" + id("gateway") + Suppress(";")
 bandwidth = integer("bw") + Suppress("M")
 p_bandwidth = "BW" + bandwidth + Suppress(";")
+p_acl = "acl" + Suppress("(") + \
+        (("on" + id + Suppress(";")) & ("under" + integer + Suppress(";")) & ("moresafe" + Suppress(";"))) + \
+        Suppress(")")
 def_policy = "policy" + id("policy_name") + Suppress("{") + \
-         ((p_isolate[..., 1]) & (p_link[..., 1]) & (p_gateway[..., 1]) & (p_bandwidth[..., 1])) + \
-         Suppress("}")
+             ((p_isolate[..., 1]) & (p_link[..., 1]) & (p_gateway[..., 1]) & (p_bandwidth[..., 1])) & (p_acl[..., 1]) + \
+             Suppress("}")
+
+# 主函数匹配模式
+main_policy_schema = id("policy_name*") + Suppress(";")
+main_group_schema = id("group_name*") + (Suppress(",") + id("group_name*"))[...] + Suppress("apply") + id(
+    "policy_name*") + Suppress(";")
+def_main = Suppress("main") + Suppress("{") + (
+            Group(main_policy_schema)[...] & Group(main_group_schema)[...]) + Suppress("}")
 
 
 # 得到所有用户的方法
@@ -77,7 +89,7 @@ def get_user(data):
 def get_group(data):
     group_dict = {}
     for gr in def_group.searchString(data):
-        g = Group()
+        g = UserGroup()
         group_dict[gr["groupname"]] = g
         g.name = gr["groupname"]
         g.user_list = gr["user"]
@@ -91,7 +103,22 @@ def get_policy(data):
     return policy_dict
 
 
+# 将主函数调用的策略存起来
+def main_policy_called(data):
+    global_plist = []
+    group_plist = []
+    for i in sum(def_main.searchString(data)):
+        print(i)
+        group_plist.append(i)
+    print(group_plist)
+    print(group_plist[0])
 
+
+s = "main { " \
+    "A,B apply linktype_vlan;" \
+    "traffic_limit;" \
+    "A apply a;" \
+    "}"
 s7 = "user A {ip 192.168.12.1/24; vlan 10; } " \
      "user B { vlan 10; ip 192.168.12.1/24; } " \
      "user C { vlan 10; } " \
@@ -102,22 +129,28 @@ s7 = "user A {ip 192.168.12.1/24; vlan 10; } " \
      "iprange(192.160.0.0/16,24){user C,D;} " \
      "vlanrange(30-100,1){user C; user D;} " \
      "isolate(type FTP;time 0:00-8:00;)" \
-     "policy a{ link vlan; " \
-     "gateway CE;}" \
-     "policy b { isolate(type FTP,time 0:00-8:00); link vxlan;}" \
+     "policy a{ " \
+     "link vlan; " \
+     "gateway CE;" \
+     "}" \
+     "policy b { " \
+     "isolate(type FTP,time 0:00-8:00); " \
+     "link vxlan;" \
+     "}" \
      "policy traffic_limit {" \
      "BW 2M; " \
+     "} " \
+     "policy ACL {" \
+     "acl(on CE1;under 30; moresafe;)" \
      "}"
 
-
-print(sum(p_isolate.searchString(s7)))
 print(def_policy.searchString(s7))
 print(get_policy(s7))
+print("---------------------------")
+print(main_policy_called(s))
+print("---------------------------")
 
 print(get_group(s7))
 print(get_user(s7))
 print(get_user(s7)[2].show())
 print(get_user(s7)[3].show())
-
-
-

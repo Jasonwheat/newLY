@@ -5,7 +5,9 @@ iprange(192.160.0.0/16,24){user C,D;}
 group E{user A; user B}
 group all{user A,B,C,D}
 
-
+policy a{
+acl(on CE1;under 30; moressafe;)
+}
 policy a{
 isolate ( type FTP; time 0:00-8:00;)
 link vxlan;
@@ -19,7 +21,7 @@ BW 2M;
 }
 
 main{
-A.a;
-B.a;
+A apply a;
+A,B apply linktype_vlan;
 traffic_limit;
 }

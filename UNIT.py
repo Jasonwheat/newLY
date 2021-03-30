@@ -6,7 +6,8 @@
 from z3 import *
 import IPy
 
-class Group:
+
+class UserGroup:
     """
     用户组数据结构
     """
