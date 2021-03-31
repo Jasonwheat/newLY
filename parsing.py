@@ -32,18 +32,30 @@ vlan_range = "vlanrange" + Suppress("(") + \
 # 策略集匹配模式
 protocol = "FTP"
 time = Combine(Combine(integer + ":" + integer) + "-" + Combine(integer + ":" + integer))
-p_isolate = "isolate" + Suppress("(") + "type" + protocol + Suppress(",") + "time" + time + Suppress(")") + Suppress(
+p_isolate = "isolate" + Suppress("(") + "type" + protocol + Suppress(";") + "time" + time + Suppress(")") + Suppress(
     ";")
+
 p_link = (Word("link") + "vlan" + Suppress(";")) ^ \
          (Word("link") + "vxlan" + Suppress(";"))
+
 p_gateway = "gateway" + id("gateway") + Suppress(";")
+
 bandwidth = integer("bw") + Suppress("M")
 p_bandwidth = "BW" + bandwidth + Suppress(";")
-p_acl = "acl" + Suppress("(") + \
-        (("on" + id + Suppress(";")) & ("under" + integer + Suppress(";")) & ("moresafe" + Suppress(";"))) + \
-        Suppress(")")
+
+acl_on = ("on" + (id + Suppress(","))[...] + id)
+acl_under = ("under" + integer)
+acl_moresafe = Word("moresafe")
+acl_1 = acl_on ^ acl_under
+acl_2 = acl_under ^ acl_moresafe
+acl_3 = acl_on ^ acl_moresafe
+acl_schema = acl_on ^ acl_under ^ acl_moresafe
+p_acl = ("acl" + Suppress("(") + acl_schema + Suppress(")") + Suppress(";")) ^ \
+        ("acl" + Suppress("(") + (acl_schema + Suppress(";") + acl_schema) + Suppress(")") + Suppress(";")) ^ \
+        ("acl" + Suppress("(") + (acl_1 + Suppress(";") + acl_schema) + Suppress(")") + Suppress(";"))
+
 def_policy = "policy" + id("policy_name") + Suppress("{") + \
-             ((p_isolate[..., 1]) & (p_link[..., 1]) & (p_gateway[..., 1]) & (p_bandwidth[..., 1])) & (p_acl[..., 1]) + \
+             ((p_isolate[..., 1]) & (p_link[..., 1]) & (p_gateway[..., 1]) & (p_bandwidth[..., 1]) & (p_acl[..., 1])) + \
              Suppress("}")
 
 # 主函数匹配模式
@@ -51,7 +63,7 @@ main_policy_schema = id("policy_name*") + Suppress(";")
 main_group_schema = id("group_name*") + (Suppress(",") + id("group_name*"))[...] + Suppress("apply") + id(
     "policy_name*") + Suppress(";")
 def_main = Suppress("main") + Suppress("{") + (
-            Group(main_policy_schema)[...] & Group(main_group_schema)[...]) + Suppress("}")
+        Group(main_policy_schema)[...] & Group(main_group_schema)[...]) + Suppress("}")
 
 
 # 得到所有用户的方法
@@ -100,57 +112,37 @@ def get_policy(data):
     policy_dict = {}
     for po in def_policy.searchString(data):
         policy_dict[po["policy_name"]] = po
+    print(policy_dict.keys())
     return policy_dict
 
 
 # 将主函数调用的策略存起来
+# 全局策略和用户组策略
 def main_policy_called(data):
     global_plist = []
     group_plist = []
     for i in sum(def_main.searchString(data)):
-        print(i)
-        group_plist.append(i)
-    print(group_plist)
-    print(group_plist[0])
+        if len(i) == 1:
+            global_plist.append(i)
+        else:
+            group_plist.append(i)
+    return global_plist, group_plist
 
 
-s = "main { " \
-    "A,B apply linktype_vlan;" \
-    "traffic_limit;" \
-    "A apply a;" \
-    "}"
-s7 = "user A {ip 192.168.12.1/24; vlan 10; } " \
-     "user B { vlan 10; ip 192.168.12.1/24; } " \
-     "user C { vlan 10; } " \
-     "user D {ip 192.168.12.1/24; } " \
-     "group G1{A;C;} " \
-     "group G2{user V; user C;} " \
-     "group G3{user x;} " \
-     "iprange(192.160.0.0/16,24){user C,D;} " \
-     "vlanrange(30-100,1){user C; user D;} " \
-     "isolate(type FTP;time 0:00-8:00;)" \
-     "policy a{ " \
-     "link vlan; " \
-     "gateway CE;" \
-     "}" \
-     "policy b { " \
-     "isolate(type FTP,time 0:00-8:00); " \
-     "link vxlan;" \
-     "}" \
-     "policy traffic_limit {" \
-     "BW 2M; " \
-     "} " \
-     "policy ACL {" \
-     "acl(on CE1;under 30; moresafe;)" \
-     "}"
+def acl_pref(data):
+    if main_policy_called(data)[0]:
+        pass
 
-print(def_policy.searchString(s7))
-print(get_policy(s7))
+
+s = "main{}"
+print(get_group(user_policy))
+print(get_user(user_policy))
+print(get_user(user_policy)[2].show())
+print(get_user(user_policy)[3].show())
 print("---------------------------")
-print(main_policy_called(s))
+print(get_policy(user_policy))
 print("---------------------------")
-
-print(get_group(s7))
-print(get_user(s7))
-print(get_user(s7)[2].show())
-print(get_user(s7)[3].show())
+print(main_policy_called(s)[0])
+print(main_policy_called(user_policy)[0])
+print(main_policy_called(user_policy)[1])
+print("---------------------------")

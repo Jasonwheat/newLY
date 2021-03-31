@@ -16,6 +16,7 @@ class UserGroup:
         self.user_list = []
         self.is_vlan = False
         self.is_vxlan = False
+        self.gateway = ''
 
 
 class User:
