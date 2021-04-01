@@ -38,24 +38,21 @@ p_isolate = "isolate" + Suppress("(") + "type" + protocol + Suppress(";") + "tim
 p_link = (Word("link") + "vlan" + Suppress(";")) ^ \
          (Word("link") + "vxlan" + Suppress(";"))
 
-p_gateway = "gateway" + id("gateway") + Suppress(";")
+p_gateway = Word("gateway") + id("gateway") + Suppress(";")
 
 bandwidth = integer("bw") + Suppress("M")
-p_bandwidth = "BW" + bandwidth + Suppress(";")
+p_bandwidth = Word("bw") + bandwidth + Suppress(";")
+
+p_waypoint = Word("wp") + id("waypoint") + Suppress(";")
 
 acl_on = ("on" + (id + Suppress(","))[...] + id)
 acl_under = ("under" + integer)
 acl_moresafe = Word("moresafe")
-acl_1 = acl_on ^ acl_under
-acl_2 = acl_under ^ acl_moresafe
-acl_3 = acl_on ^ acl_moresafe
-acl_schema = acl_on ^ acl_under ^ acl_moresafe
-p_acl = ("acl" + Suppress("(") + acl_schema + Suppress(")") + Suppress(";")) ^ \
-        ("acl" + Suppress("(") + (acl_schema + Suppress(";") + acl_schema) + Suppress(")") + Suppress(";")) ^ \
-        ("acl" + Suppress("(") + (acl_1 + Suppress(";") + acl_schema) + Suppress(")") + Suppress(";"))
+acl_schema = (acl_on + Suppress(";"))[..., 1] & (acl_under + Suppress(";"))[..., 1] & (acl_moresafe + Suppress(";"))[..., 1]
+p_acl = ("acl" + Suppress("(") + acl_schema + Suppress(")"))
 
 def_policy = "policy" + id("policy_name") + Suppress("{") + \
-             ((p_isolate[..., 1]) & (p_link[..., 1]) & (p_gateway[..., 1]) & (p_bandwidth[..., 1]) & (p_acl[..., 1])) + \
+             ((p_isolate[..., 1]) & (p_link[..., 1]) & (p_gateway[..., 1]) & (p_bandwidth[..., 1]) & (p_acl[..., 1]) & (p_waypoint[..., 1])) + \
              Suppress("}")
 
 # 主函数匹配模式
@@ -129,12 +126,21 @@ def main_policy_called(data):
     return global_plist, group_plist
 
 
+# {'under': [], 'on': [], 'moresafe': 0}
 def acl_pref(data):
+    acl_dict = {'under': [], 'on': [], 'moresafe': 0}
     if main_policy_called(data)[0]:
         pass
 
 
-s = "main{}"
+# {'gateway': ['CE1', 'CE2'], 'Employee1': ['CE3']}
+def gateway_set(data):
+    pass
+
+# [['Employee1', 'Employee2']]
+# [['10.168.4.80', '10.168.5.254', '10.168.100.90', '10.168.101.254']]
+
+
 print(get_group(user_policy))
 print(get_user(user_policy))
 print(get_user(user_policy)[2].show())
@@ -142,7 +148,6 @@ print(get_user(user_policy)[3].show())
 print("---------------------------")
 print(get_policy(user_policy))
 print("---------------------------")
-print(main_policy_called(s)[0])
 print(main_policy_called(user_policy)[0])
 print(main_policy_called(user_policy)[1])
 print("---------------------------")
