@@ -27,9 +27,8 @@ vlan_range = "vlanrange" + Suppress("(") + \
              Suppress(")") + user_schema
 
 # 策略集匹配模式
-protocol = "FTP"
 time = Combine(Combine(integer + ":" + integer) + "-" + Combine(integer + ":" + integer))
-p_isolate = "isolate" + Suppress("(") + "type" + protocol + Suppress(";") + "time" + time + Suppress(")") + Suppress(
+p_isolate = "isolate" + Suppress("(") + "service" + id("service") + Suppress(";") + "time" + time + Suppress(")") + Suppress(
     ";")
 
 p_link = (Word("link") + Word("vlan")("type*") + Suppress(";")) ^ \
@@ -60,6 +59,8 @@ main_group_schema = id("group_name*") + (Suppress(",") + id("group_name*"))[...]
     "policy_name*") + Suppress(";")
 def_main = Suppress("main") + Suppress("{") + (
         Group(main_policy_schema)[...] & Group(main_group_schema)[...]) + Suppress("}")
+
+s = "isolate(service FTP; protocol udp, port 69; srcport 60)"
 
 
 # 得到所有用户的方法

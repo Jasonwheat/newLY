@@ -30,3 +30,6 @@ global;
 G1,G2 apply linktype_vlan;
 traffic;
 }
+
+isolate(service FTP; srcport 60;)
+isolate(protocol udp, port 69; srcport 60;)
