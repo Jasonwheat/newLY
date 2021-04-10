@@ -11,12 +11,20 @@ class UserGroup:
     """
     用户组数据结构
     """
+
     def __init__(self):
         self.name = ''
         self.user_list = []
-        self.is_vlan = False
-        self.is_vxlan = False
-        self.gateway = ''
+        self.linktype = ''
+        self.gateway = []
+
+    def show(self):
+        print("--------")
+        print("name:" + self.name)
+        print("user:" + ','.join(self.user_list))
+        print("linktype:" + self.linktype)
+        print("gateway:" + ','.join(self.gateway))
+        print("--------")
 
 
 class User:
@@ -41,7 +49,10 @@ class User:
         print("group:" + self.userG)
         print("access:" + self.access)
         print("vlan:" + str(self.vlan))
-        print("ip:" + str(self.ip))
+        if self.ip is None:
+            print("ip:" + str(self.ip))
+        else:
+            print("ip:" + str(self.ip.prefix))
         print("num:" + str(self.num))
         print("--------")
 
@@ -102,6 +113,7 @@ class IP:
     格式：fst.snd.trd.fth/mask
     通过getIP读取字符串格式IP，并检查IP格式是否符合标准
     """
+
     def __init__(self, ip_instance: IPy.IP, prefix_len: int = -1):
         self.ip_address = ip_instance
         if prefix_len == -1:
@@ -164,4 +176,3 @@ class Traffic:
 
     def getFromaggUser(self):
         pass
-
