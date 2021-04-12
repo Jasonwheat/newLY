@@ -27,9 +27,10 @@ vlan_range = "vlanrange" + Suppress("(") + \
              Suppress(")") + user_schema
 
 # 策略集匹配模式
-time = Combine(Combine(integer + ":" + integer) + "-" + Combine(integer + ":" + integer))
-p_isolate = "isolate" + Suppress("(") + "service" + id("service") + Suppress(";") + "time" + time + Suppress(")") + Suppress(
-    ";")
+# time = Combine(Combine(integer + ":" + integer) + "-" + Combine(integer + ":" + integer))
+iso_type1 = Word("service") + id("servicetype") + Suppress(",") + Word("scrport") + integer("srcport") + Suppress(";")
+iso_type2 = Word("protocol") + id("protocol") + Suppress(",") + Word("dstport") + integer("dstport") + Word("scrport") + integer("srcport") + Suppress(";")
+p_isolate = "isolate" + Suppress("(") +  + Suppress(")") + Suppress(";")
 
 p_link = (Word("link") + Word("vlan")("type*") + Suppress(";")) ^ \
          (Word("link") + Word("vxlan")("type*") + Suppress(";"))
