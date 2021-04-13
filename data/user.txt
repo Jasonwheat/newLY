@@ -12,12 +12,12 @@ acl(on ce1,ce2;moresafe;under 30;)
 gateway ce1;
 }
 policy a{
-isolate (type FTP; time 0:00-8:00);
+isolate (service HTTP, srcport 60; protocol udp, dstport 69, srcport 50;)
 link vxlan;
 }
 policy linktype_vlan{
 link vlan;
-gateway CE;
+gateway CE1,CE2;
 }
 policy traffic{
 bw 2M;
@@ -30,6 +30,3 @@ global;
 G1,G2 apply linktype_vlan;
 traffic;
 }
-
-isolate(service FTP; srcport 60;)
-isolate(protocol udp, port 69; srcport 60;)

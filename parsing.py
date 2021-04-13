@@ -27,21 +27,28 @@ vlan_range = "vlanrange" + Suppress("(") + \
              Suppress(")") + user_schema
 
 # 策略集匹配模式
-# time = Combine(Combine(integer + ":" + integer) + "-" + Combine(integer + ":" + integer))
+# 隔离策略
 iso_type1 = Word("service") + id("servicetype") + Suppress(",") + Word("scrport") + integer("srcport") + Suppress(";")
-iso_type2 = Word("protocol") + id("protocol") + Suppress(",") + Word("dstport") + integer("dstport") + Word("scrport") + integer("srcport") + Suppress(";")
-p_isolate = "isolate" + Suppress("(") +  + Suppress(")") + Suppress(";")
+iso_type2 = Word("protocol") + id("protocol") + Suppress(",") + Word("dstport") + integer("dstport") + Suppress(",") + Word("scrport") + integer("srcport") + Suppress(";")
+p_isolate = "isolate" + Suppress("(") + (iso_type1[1, ...] & iso_type2[1, ...]) + Suppress(")") ^ \
+            "isolate" + Suppress("(") + iso_type1[1, ...] + Suppress(")") ^ \
+            "isolate" + Suppress("(") + iso_type2[1, ...] + Suppress(")")
 
+# linktype
 p_link = (Word("link") + Word("vlan")("type*") + Suppress(";")) ^ \
          (Word("link") + Word("vxlan")("type*") + Suppress(";"))
 
+# 网关
 p_gateway = (Word("gateway") + (id("gateway*") + Suppress(","))[...] + id("gateway*") + Suppress(";"))
 
+# 限速
 bandwidth = integer("bw") + Suppress("M")
 p_bandwidth = Word("bw") + bandwidth + Suppress(";")
 
+# 陆航点
 p_waypoint = Word("wp") + id("waypoint") + Suppress(";")
 
+# acl偏好
 acl_on = ("on" + (id("on*") + Suppress(","))[...] + id("on*"))
 acl_under = ("under" + integer("under*"))
 acl_moresafe = Word("moresafe")
@@ -49,6 +56,7 @@ acl_schema = (acl_on + Suppress(";"))[..., 1] & (acl_under + Suppress(";"))[...,
     ..., 1]
 p_acl = ("acl" + Suppress("(") + acl_schema + Suppress(")"))
 
+# 总定义
 def_policy = "policy" + id("policy_name") + Suppress("{") + \
              ((p_isolate[..., 1]) & (p_link[..., 1]) & (p_gateway[..., 1]) & (p_bandwidth[..., 1]) & (p_acl[..., 1]) & (
              p_waypoint[..., 1])) + \
@@ -61,8 +69,14 @@ main_group_schema = id("group_name*") + (Suppress(",") + id("group_name*"))[...]
 def_main = Suppress("main") + Suppress("{") + (
         Group(main_policy_schema)[...] & Group(main_group_schema)[...]) + Suppress("}")
 
-s = "isolate(service FTP; protocol udp, port 69; srcport 60)"
-
+# s1 = "isolate(service FTP, srcport 60; protocol udp, dstport 69, srcport 60;)"
+# s2 = "isolate(service FTP, srcport 60;)"
+# s3 = "isolate(protocol udp, dstport 69, srcport 60;)"
+# s4 = "isolate(service FTP, srcport 60; protocol udp, dstport 69, srcport 60;protocol tcp, dstport 80, srcport 20;)"
+# print(p_isolate.searchString(s1))
+# print(p_isolate.searchString(s2))
+# print(p_isolate.searchString(s3))
+# print(p_isolate.searchString(s4))
 
 # 得到所有用户的方法
 # 得到每个用户组的方法
@@ -115,7 +129,7 @@ def get_group(data):
 
 
 # 所有定义的策略集
-# 存在字典中
+# 返回一个记录所有定义的策略集的字典，键为策略集名字，值为策略集具体信息
 def get_policy(data):
     policy_dict = {}
     for po in def_policy.searchString(data):
@@ -125,7 +139,7 @@ def get_policy(data):
 
 
 # 主函数调用策略
-# 调用哪个就去策略集中找哪个
+# 返回三个列表，分别是全局策略、多个用户组策略、方向性策略
 def main_policy_called(data):
     global_plist = []  # 全局策略
     group_plist = []  # 多个用户组参与的策略
@@ -139,6 +153,7 @@ def main_policy_called(data):
 
 
 # {'under': [], 'on': [], 'moresafe': 0}
+# 返回一个记录acl偏好的字典
 def acl_pref(data):
     acl_dict = {'under': [], 'on': [], 'moresafe': 0}
     policy = get_policy(data)
@@ -155,6 +170,7 @@ def acl_pref(data):
 
 
 # {'gateway': ['CE1', 'CE2'], 'Employee1': ['CE3']}
+# 返回一个记录网关信息的字典，同时更新用户组字典中每个用户组对象的gateway变量
 def gateway_set(data):
     gateway_dict = {'gateway': []}
     policy = get_policy(data)
@@ -172,6 +188,7 @@ def gateway_set(data):
     return gateway_dict
 
 
+# 更新用户组字典中每个用户组对象的linktype变量
 def group_linktype(data):
     policy = get_policy(data)
     for i in main_policy_called(data)[1]:
@@ -182,22 +199,34 @@ def group_linktype(data):
                 group_dict[i[j]].linktype = policy[i[length-1]]["type"][0]
 
 
+def isolate_info(data):
+
+    policy = get_policy(data)
+    for i in main_policy_called(data)[1]:
+        length = int(len(i))
+        list1 = list(policy[i[length - 1]])
+        print(list1)
+        if 'isolate' in list1:
+            pass
+
+
 # [['Employee1', 'Employee2']]
 # [['10.168.4.80', '10.168.5.254', '10.168.100.90', '10.168.101.254']]
 
-
+print("---------------------------")
 print(get_group(user_policy))
 print(get_user(user_policy))
-print(user_dict['A'].show())
-print(user_dict['C'].show())
-print(user_dict['D'].show())
+# print(user_dict['A'].show())
+# print(user_dict['C'].show())
+# print(user_dict['D'].show())
 # print(get_user(user_policy)[3].show())
 print("---------------------------")
 print(get_policy(user_policy))
+print(main_policy_called(user_policy))
 print("---------------------------")
-# print(main_policy_called(user_policy))
+print(isolate_info(user_policy))
 # print(acl_pref(user_policy))
 # print(gateway_set(user_policy))
 # print(group_linktype(user_policy))
-# print(group_dict['G1'].show())
+# print(group_dict['G1'].gateway)
 print("---------------------------")
