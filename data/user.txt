@@ -1,32 +1,43 @@
 user A {ip 192.168.12.1/16; vlan 10; }
 user B { vlan 10; ip 192.168.12.1/24; }
 user C { vlan 10; }
-user D {ip 192.168.12.1/24; }
+user D {ip 192.168.12.1/24;}
 group G1{A;B;}
 group G2{user C; user D;}
 iprange(192.160.0.0/20,24){user C,D;}
 vlanrange(30-100,1){user C; user D;}
+ipsegment p1 {192.168.20.1-192.168.40.5}
+ipsegment p2 {10.168.4.80-10.168.5.254}
+
+policy iso_a{
+isolate (service HTTP, srcport 60; protocol udp, dstport 69, srcport 50;service FTP, srcport 80;)
+}
+
+policy iso_b{
+isolate ()
+}
 
 policy global{
 acl(on ce1,ce2;moresafe;under 30;)
 gateway ce1;
 }
-policy a{
-isolate (service HTTP, srcport 60; protocol udp, dstport 69, srcport 50;)
-link vxlan;
-}
+
 policy linktype_vlan{
 link vlan;
 gateway CE1,CE2;
 }
 policy traffic{
-bw 2M;
-wp CE;
+bandwidth 2M;
+waypoint CE;
 }
 
 main{
-G1 apply a;
+G1,G2 apply iso_a;
+p1,p2 apply iso_a;
+p1,p2 apply iso_b;
+G1,G2 apply iso_b;
 global;
 G1,G2 apply linktype_vlan;
 traffic;
+
 }

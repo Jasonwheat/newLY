@@ -27,6 +27,23 @@ class UserGroup:
         print("--------")
 
 
+class IsolateInfo:
+
+    def __init__(self):
+        self.group_info = []
+        self.ipsegment_info = []
+        self.service_info = []
+        self.protocol_info = []
+
+    def show(self):
+        print("--------")
+        print("group:" + str(self.group_info))
+        print("ip segment:" + str(self.ipsegment_info))
+        print("service:" + str(self.service_info))
+        print("protocol:" + str(self.protocol_info))
+        print("--------")
+
+
 class User:
     """
     用户节点数据结构
