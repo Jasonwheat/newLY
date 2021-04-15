@@ -17,6 +17,7 @@ class UserGroup:
         self.user_list = []
         self.linktype = ''
         self.gateway = []
+        self.gateway_best = ''
 
     def show(self):
         print("--------")

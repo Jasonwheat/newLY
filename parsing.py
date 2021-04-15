@@ -52,7 +52,7 @@ p_gateway = (Word("gateway") + (id("gateway*") + Suppress(","))[...] + id("gatew
 
 # 限速
 bandwidth = integer("bw") + Suppress("M")
-p_bandwidth = Word("bw") + bandwidth + Suppress(";")
+p_bandwidth = Word("bandwidth") + bandwidth + Suppress(";")
 
 # 陆航点
 p_waypoint = Word("wp") + id("waypoint") + Suppress(";")
@@ -75,7 +75,7 @@ def_policy = "policy" + id("policy_name") + Suppress("{") + \
 main_policy_schema = id("policy_name*") + Suppress(";")
 main_group_schema = id("group_name*") + (Suppress(",") + id("group_name*"))[...] + Suppress("apply") + id(
     "policy_name*") + Suppress(";")
-main_direction_schema = id("group_name1*") + "->" + id("group_name2*") + Suppress("apply") + id(
+main_direction_schema = id("group_name*") + "->" + id("group_name*") + Suppress("apply") + id(
     "policy_name*") + Suppress(";")
 def_main = Suppress("main") + Suppress("{") + \
            (Group(main_policy_schema)[...] & Group(main_group_schema)[...] & Group(main_direction_schema)[...]) + \
@@ -274,11 +274,23 @@ def isolate_info(data):
     return group_list, ipsegment_list, info_object_list
 
 
+# 返回一个list记录限速信息
+# [['Group1', 'Group2', '2M'], ['Group3', 'Group4', '5M']]
 def bandwidth_info(data):
+    policy = get_policy(data)
+    for i in main_policy_called(data)[1]:
+        print(i)
+        length = int(len(i))
+        list1 = list(policy[i[length - 1]])
+        print(list1)
+        # if 'link' in list1:
     pass
 
 
+# 返回一个list记录陆航信息
+# [['Group1', 'Group2', ['ce1, ce2']], ['Group3', 'Group4', ['ce1']]]
 def waypoint_info(data):
+
     pass
 
 
@@ -303,9 +315,9 @@ print(get_policy(user_policy).keys())
 print(get_policy(user_policy))
 print(main_policy_called(user_policy))
 print("---------------------------")
-print(isolate_info(user_policy)[0])
-print(isolate_info(user_policy)[1])
-print(isolate_info(user_policy)[2])
+# print(isolate_info(user_policy)[0])
+# print(isolate_info(user_policy)[1])
+# print(isolate_info(user_policy)[2])
 # print(isolate_info(user_policy)[0].show())
 # print(isolate_info(user_policy)[1].show())
 # print(acl_pref(user_policy))
